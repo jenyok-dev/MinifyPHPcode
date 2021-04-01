@@ -1,7 +1,6 @@
 <?php
 
 /* ================================================================================= //
-
 	Класс для уменьшения размера php файла с возможностью задать в отдельном файле
 	
 	или же создание копии файла (backup).
@@ -13,7 +12,6 @@
 	/var/www/html/file.php будет переименован в /var/www/html/file.php.backup,
 	
 	а в /var/www/html/file.php записан обработанный код.
-
 // ================================================================================= */
 
 class MinifyPHP {
@@ -241,38 +239,6 @@ class MinifyPHP {
 	}
 
 	/**
-	 * Проверка на возможность создания файла 
-         * в родительской директории файла inFile или outFile	 
-	 *
-	 * @param bool $name 1 inFile, 0 outFile
-	 * @return bool
-	 */
-
-	private function checkAccess($name) {
-
-		// если владелец php не root
-		if (posix_getuid()) {
-
-			$stat = stat(dirname($name ? $this->inFile : $this->outFile));
-
-			// если владелец или группа php не совпадают с владельцем или группой директории
-			if ($stat["uid"] != posix_getuid() && 
-				$stat["gid"] != posix_getgid()) {
-				// проверяем доступно ли гостям писать в директории
-				// стоит ли у гостя этой директории бит w (значение 7, в 8-ричной системе счисления)
-				if (!($stat['mode'] & 0x0002)) 
-					return error_log("permission denied write; ".
-						($name ? $this->inFile : $this->outFile).
-						substr(sprintf('%o', $stat['mode']), -4), 0) && false;
-			}
-
-		}
-		
-		return true;
-		
-	}
-
-	/**
 	 * Переименование $this->inFile на $this->inFile.".backup", 
 	 * а в $this->inFile записываем обработанный код
 	 *
@@ -281,8 +247,8 @@ class MinifyPHP {
 	 */
 
 	private function createBackup() {
-		
-		if (!$this->checkAccess(1)) return false;
+
+		if (!is_writable(dirname($this->inFile))) return false;
 		
 		$nameBackup = $this->inFile.".backup";
 
@@ -303,8 +269,8 @@ class MinifyPHP {
 
 	/**
 	 * Проверяем есть ли файл для записи, 
-	 * если нет - делаем backup и запускам процесс обработки php кода, 
-	 * а если есть проверяем на запись и запускаем тот же процесс обработки
+	 * если нет - делаем backup и запускам обработку php кода, 
+	 * а если есть проверяем на запись и запускаем ту же обработку
 	 *
 	 * @param void
 	 * @return bool
@@ -326,8 +292,10 @@ class MinifyPHP {
 		}
 		
 		// иначе проверяем доступ на запись.
-		if (!is_writable($this->outFile))		
-			if (!$this->checkAccess(0)) return false;
+		if (!is_writable($this->outFile))
+			// если файл существует но не доступен для записи или файла нет но директория не доступа для записи
+			if (is_file($this->outFile) 
+				|| !is_writable(dirname($this->outFile))) return false;
 			
 		return $this->writePHP(0);
 
