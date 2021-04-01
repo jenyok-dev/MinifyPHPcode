@@ -164,7 +164,7 @@ class MinifyPHP {
 				} else {
 					LF_TAB_CLEAR:
 					if (strpos($token, "\n") !== false ||
-						strpos($token, "\t") !== false) {				 
+						strpos($token, "\t") !== false) {
 						 $token   = preg_replace('/\n|\t/s', ' ', $token);
 						 $buffer .= preg_replace('/\s{2,}/s', ' ', $token);
 
@@ -278,8 +278,9 @@ class MinifyPHP {
 	 
 	public function Run() {
 
-		if (!is_readable($this->inFile))
-			return error_log("readable Run ".$this->inFile, 0) && false;
+		if (!is_string($this->inFile) || 
+			!is_readable($this->inFile))
+			return error_log("inFile is not string / readable Run ".var_export($this->inFile, 1), 0) && false;
 
 		if (!$this->checkSyntax(1)) return false;
 
@@ -289,6 +290,9 @@ class MinifyPHP {
 			
 			return $this->writePHP(1);
 			
+		} else {
+			if (!is_string($this->outFile))
+				return error_log("outFile is not string ".var_export($this->outFile, 1), 0) && false;
 		}
 		
 		// иначе проверяем доступ на запись.
